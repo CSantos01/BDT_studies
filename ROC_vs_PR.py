@@ -6,6 +6,13 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import f1_score, matthews_corrcoef
 
+# Create output directory if it does not exist
+from pathlib import Path
+__this_file__ = Path(__file__).resolve()
+__output_dir__ = __this_file__.parent / "output"
+__output_dir__.mkdir(parents=True, exist_ok=True)
+
+# Import argparse to parse command line arguments
 import argparse
 argparser = argparse.ArgumentParser(description="Script to compute various metrics with respect to the weights of the classes")
 argparser.add_argument("--weights", type=float, nargs=2, default=[0.83, 0.17], help="Weights of the classes")
@@ -59,7 +66,7 @@ plt.ylabel('True label')
 plt.title('Confusion Matrix')
 plt.xticks([0, 1], ['Negative', 'Positive'])
 plt.yticks([0, 1], ['Negative', 'Positive'])
-plt.savefig(f'confusion_matrix{extra_label}.png')
+plt.savefig(__output_dir__ / f'confusion_matrix{extra_label}.png')
 
 # Compute ROC curve and ROC AUC
 fpr, tpr, _ = roc_curve(y_test, y_scores)
@@ -81,7 +88,7 @@ plt.xlabel('Signal efficiency')
 plt.ylabel('Background rejection')
 plt.title('Receiver Operating Characteristic')
 plt.legend(loc="lower right")
-plt.savefig(f'roc_curve{extra_label}.png')
+plt.savefig(__output_dir__ / f'roc_curve{extra_label}.png')
 
 # Plot Precision-Recall curve
 plt.figure()
@@ -93,7 +100,7 @@ plt.xlabel('Recall')
 plt.ylabel('Precision')
 plt.title('Precision-Recall curve')
 plt.legend(loc="lower left")
-plt.savefig(f'pr_curve{extra_label}.png')
+plt.savefig(__output_dir__ / f'pr_curve{extra_label}.png')
 
 # Compute F1-score
 f1 = f1_score(y_test, y_pred)
@@ -104,7 +111,7 @@ mcc = matthews_corrcoef(y_test, y_pred)
 print(f"Matthews correlation coefficient (MCC): {mcc:.2f}")
 
 # Saving the information to a text file
-with open(f'metrics{extra_label}.txt', 'w') as f:
+with open(__output_dir__ / f'metrics{extra_label}.txt', 'w') as f:
     f.write(f"ROC AUC: {roc_auc:.2f}\n")
     f.write(f"PR AUC: {pr_auc:.2f}\n")
     f.write(f"F1-score: {f1:.2f}\n")

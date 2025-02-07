@@ -1,0 +1,11 @@
+# Ignore
+output/
+env/
+__pycache__/
+*.pdf
+*.png
+*.jpg
+*.txt
+
+# Except
+!requirements.txt
