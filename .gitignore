@@ -2,6 +2,7 @@
 output/
 env/
 __pycache__/
+logs/
 *.pdf
 *.png
 *.jpg
