@@ -50,28 +50,29 @@ model = GradientBoostingClassifier()
 
 # Define the hyperparameters grid to search
 param_grid = {
-    'n_estimators': [50, 100, 200],
-    'learning_rate': [0.01, 0.1, 0.2],
-    'max_depth': [3, 5, 7]
+    # 'n_estimators': [50, 100, 200],
+    'learning_rate': [0.01, 0.05, 0.1, 0.15, 0.2, 0.5],
+    # 'max_depth': [3, 5, 7]
 }
 
-# Initialize lists to store results
-results = {
-    'accuracy': [],
+dict_r = {
+    "lr": [],
     'roc_auc': [],
+    "pr_auc": [],
     'f1': [],
-    'precision': [],
-    'recall': []
+    "mcc": []
 }
 
 with open(__output_dir__ / f'metrics_results{extra_label}.txt', 'w') as f:
-    for scoring in results.keys():
+    # for scoring in results.keys():
+    for lr in param_grid['learning_rate']:
         # Perform grid search with cross-validation
-        grid_search = GridSearchCV(estimator=model, param_grid=param_grid, scoring=scoring, cv=5, n_jobs=-1)
+        # grid_search = GridSearchCV(estimator=model, param_grid=param_grid, scoring=scoring, cv=5, n_jobs=-1)
+        grid_search = GradientBoostingClassifier(learning_rate=lr)
         grid_search.fit(X_train, y_train)
 
         # Get the best model
-        best_model = grid_search.best_estimator_
+        best_model = grid_search
 
         # Predict probabilities
         y_scores = best_model.predict_proba(X_test)[:, 1]
@@ -84,26 +85,21 @@ with open(__output_dir__ / f'metrics_results{extra_label}.txt', 'w') as f:
         f1 = f1_score(y_test, y_pred)
         mcc = matthews_corrcoef(y_test, y_pred)
 
-        # Store the metrics
-        results[scoring].append({
-            'best_params': grid_search.best_params_,
-            'roc_auc': roc_auc,
-            'pr_auc': pr_auc,
-            'f1': f1,
-            'mcc': mcc
-        })
+        dict_r["lr"].append(lr)
+        dict_r['roc_auc'].append(roc_auc)
+        dict_r['f1'].append(f1)
+        dict_r['pr_auc'].append(pr_auc)
+        dict_r['mcc'].append(mcc)
 
         # Print the metrics
-        print(f"Scoring: {scoring}")
-        print(f"Best Hyperparameters: {grid_search.best_params_}")
+        print(f"Learning rate: {lr}")
         print(f"ROC AUC: {roc_auc:.2f}")
         print(f"PR AUC: {pr_auc:.2f}")
         print(f"F1 Score: {f1:.2f}")
         print(f"Matthews Correlation Coefficient: {mcc:.2f}")
 
         # Save the metrics to a .txt file
-        f.write(f"Scoring: {scoring}\n")
-        f.write(f"Best Hyperparameters: {grid_search.best_params_}\n")
+        f.write(f"Learning rate: {lr}\n")
         f.write(f"ROC AUC: {roc_auc:.2f}\n")
         f.write(f"PR AUC: {pr_auc:.2f}\n")
         f.write(f"F1 Score: {f1:.2f}\n")
@@ -117,42 +113,22 @@ with open(__output_dir__ / f'metrics_results{extra_label}.txt', 'w') as f:
         f.write(f"Confusion Matrix:\n{cm}\n")
         f.write("\n")
 
-# Plot the results
-metrics = ['roc_auc', 'pr_auc', 'f1', 'mcc']
-y_min, y_max = float('inf'), float('-inf')
+import pandas as pd
 
-# Determine the global min and max for y-axis
-for metric in metrics:
-    for scoring in results.keys():
-        value = results[scoring][0][metric]
-        y_min = min(y_min, value)
-        y_max = max(y_max, value)
+df = pd.DataFrame(dict_r)
+df.to_csv(__output_dir__ / f'metrics_results{extra_label}.csv', index=False)
+print(df)
 
-# for metric in metrics:
-#     plt.figure(figsize=(12, 8))
-#     for scoring in results.keys():
-#         value = results[scoring][0][metric]
-#         plt.bar(scoring, value)
+# Plot the dataframe with learning rate as x-axis and other columns as lines
+plt.figure(figsize=(12, 8))
+for column in df.columns:
+    if column != 'lr':
+        plt.plot(df['lr'], df[column], label=column)
 
-#     plt.yscale('log')
-#     plt.ylim(y_min, y_max)
-#     plt.xlabel('Scoring Method')
-#     plt.ylabel(f'{metric} Value (log scale)')
-#     plt.title(f'{metric} as a Function of Hyperparameters')
-#     plt.savefig(output_dir / f'{metric}_comparison_log_scale.pdf')
-#     plt.close()
-
-with PdfPages(__output_dir__ / f'all_metrics_comparison{extra_label}.pdf') as pdf:
-    for metric in metrics:
-        plt.figure(figsize=(12, 8))
-        for scoring in results.keys():
-            value = results[scoring][0][metric]
-            plt.bar(scoring, value)
-
-        plt.yscale('log')
-        plt.ylim(y_min, y_max)
-        plt.xlabel('Scoring Method')
-        plt.ylabel(f'{metric} Value (log scale)')
-        plt.title(f'{metric} as a Function of Hyperparameters')
-        pdf.savefig()
-        plt.close()
+plt.xlabel('Learning Rate')
+plt.ylabel('Metrics')
+plt.title('Metrics as a Function of Learning Rate')
+plt.legend()
+plt.grid(True)
+plt.savefig(__output_dir__ / f'metrics_vs_learning_rate{extra_label}.pdf')
+plt.show()

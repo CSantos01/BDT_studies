@@ -3,6 +3,7 @@ from sklearn.metrics import roc_curve, roc_auc_score, precision_recall_curve, au
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import f1_score, matthews_corrcoef
 
@@ -44,8 +45,8 @@ X_train, X_test, y_train, y_test = train_test_split(
     random_state=42,
 )
 
-# Train a logistic regression model
-model = LogisticRegression()
+# Train a Gradient Boosting Classifier model
+model = GradientBoostingClassifier()
 model.fit(X_train, y_train)
 
 # Predict probabilities
