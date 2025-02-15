@@ -5,6 +5,7 @@ Error = /afs/desy.de/user/c/csantos/BDT_studies/logs/training_$(Cluster)_$(Proce
 getenv = PATH CONDA_EXE CONDA_PYTHON_EXE PYTHONPATH B2KNNFILES B2KNNROOT CONDA_PREFIX CONDA_DEFAULT_ENV ROOTSYS B2KNN*
 
 request_memory = 2048
++RequestRuntime = 10 * 3600
 should_transfer_files = no
 
 Queue 1
