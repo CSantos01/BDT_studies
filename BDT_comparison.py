@@ -97,9 +97,12 @@ def objective(trial, classifier_name):
     return accuracy_score(y_test, y_pred)
 
 # Optimize hyperparameters and compare classifiers
+import concurrent.futures
+
 results = {}
 classifiers = ["GradientBoostingClassifier", "LightGBM", "XGBoost", "EBM"]
-for classifier_name in classifiers:
+
+def optimize_and_evaluate(classifier_name):
     study = optuna.create_study(direction='maximize')
     study.optimize(lambda trial: objective(trial, classifier_name), n_trials=20)
     best_params = study.best_params
@@ -113,7 +116,13 @@ for classifier_name in classifiers:
     elif classifier_name == "EBM":
         best_clf = ExplainableBoostingClassifier(**best_params)
     
-    results[classifier_name] = evaluate_classifier(best_clf, X_train, X_test, y_train, y_test)
+    return classifier_name, evaluate_classifier(best_clf, X_train, X_test, y_train, y_test)
+
+with concurrent.futures.ThreadPoolExecutor() as executor:
+    future_to_classifier = {executor.submit(optimize_and_evaluate, clf): clf for clf in classifiers}
+    for future in concurrent.futures.as_completed(future_to_classifier):
+        classifier_name, metrics = future.result()
+        results[classifier_name] = metrics
 
 # Write results to a .txt file
 output_file = __output_dir__ / f"results{extra_label}.txt"
