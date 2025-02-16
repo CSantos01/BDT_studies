@@ -64,6 +64,41 @@ dict_r = {
     "mcc": []
 }
 
+def compute_metrics(lr, n_estimators):
+    # Perform grid search with cross-validation
+    grid_search = GradientBoostingClassifier(learning_rate=lr, n_estimators=n_estimators)
+    grid_search.fit(X_train, y_train)
+
+    # Get the best model
+    best_model = grid_search
+
+    # Predict probabilities
+    y_scores = best_model.predict_proba(X_test)[:, 1]
+    y_pred = best_model.predict(X_test)
+
+    # Compute various metrics
+    roc_auc = roc_auc_score(y_test, y_scores)
+    precision, recall, _ = precision_recall_curve(y_test, y_scores)
+    pr_auc = auc(recall, precision)
+    f1 = f1_score(y_test, y_pred)
+    mcc = matthews_corrcoef(y_test, y_pred)
+
+    # Compute the confusion matrix
+    cm = confusion_matrix(y_test, y_pred)
+
+    return {
+        "n_estimators": n_estimators,
+        "lr": lr,
+        "roc_auc": roc_auc,
+        "pr_auc": pr_auc,
+        "f1": f1,
+        "mcc": mcc,
+        "confusion_matrix": cm
+    }
+
+from joblib import Parallel, delayed
+results = Parallel(n_jobs=-1)(delayed(compute_metrics)(lr, n_estimators) for lr in param_grid['learning_rate'] for n_estimators in param_grid['n_estimators'])
+
 with open(__output_dir__ / f'metrics_results{extra_label}.txt', 'w') as f:
     f.write(f"Number of samples: {n_samples}\n")
     f.write(f"Number of features: {n_features}\n")
@@ -71,59 +106,35 @@ with open(__output_dir__ / f'metrics_results{extra_label}.txt', 'w') as f:
     f.write(f"Weights: {weights}\n")
     f.write("#" * 50)
     f.write("\n")
-    
-    for lr in param_grid['learning_rate']:
-        for n_estimators in param_grid['n_estimators']:
-            # Perform grid search with cross-validation
-            grid_search = GradientBoostingClassifier(learning_rate=lr, n_estimators=n_estimators)
-            grid_search.fit(X_train, y_train)
 
-            # Get the best model
-            best_model = grid_search
+    for result in results:
+        # Save the metrics to a dictionary
+        dict_r["n_estimators"].append(result["n_estimators"])
+        dict_r["lr"].append(result["lr"])
+        dict_r['roc_auc'].append(result["roc_auc"])
+        dict_r['f1'].append(result["f1"])
+        dict_r['pr_auc'].append(result["pr_auc"])
+        dict_r['mcc'].append(result["mcc"])
 
-            # Predict probabilities
-            y_scores = best_model.predict_proba(X_test)[:, 1]
-            y_pred = best_model.predict(X_test)
+        # Print the metrics
+        print(f"Number of estimators: {result['n_estimators']}")
+        print(f"Learning rate: {result['lr']}")
+        print(f"ROC AUC: {result['roc_auc']:.2f}")
+        print(f"PR AUC: {result['pr_auc']:.2f}")
+        print(f"F1 Score: {result['f1']:.2f}")
+        print(f"Matthews Correlation Coefficient: {result['mcc']:.2f}")
 
-            # Compute various metrics
-            roc_auc = roc_auc_score(y_test, y_scores)
-            precision, recall, _ = precision_recall_curve(y_test, y_scores)
-            pr_auc = auc(recall, precision)
-            f1 = f1_score(y_test, y_pred)
-            mcc = matthews_corrcoef(y_test, y_pred)
-
-            # Save the metrics to a dictionary
-            dict_r["n_estimators"].append(n_estimators)
-            dict_r["lr"].append(lr)
-            dict_r['roc_auc'].append(roc_auc)
-            dict_r['f1'].append(f1)
-            dict_r['pr_auc'].append(pr_auc)
-            dict_r['mcc'].append(mcc)
-
-            # Print the metrics
-            print(f"Number of estimators: {n_estimators}")
-            print(f"Learning rate: {lr}")
-            print(f"ROC AUC: {roc_auc:.2f}")
-            print(f"PR AUC: {pr_auc:.2f}")
-            print(f"F1 Score: {f1:.2f}")
-            print(f"Matthews Correlation Coefficient: {mcc:.2f}")
-
-            # Save the metrics to a .txt file
-            f.write(f"Number of estimators: {n_estimators}\n")
-            f.write(f"Learning rate: {lr}\n")
-            f.write(f"ROC AUC: {roc_auc:.2f}\n")
-            f.write(f"PR AUC: {pr_auc:.2f}\n")
-            f.write(f"F1 Score: {f1:.2f}\n")
-            f.write(f"Matthews Correlation Coefficient: {mcc:.2f}\n")
-            f.write("\n")
-
-            # Compute the confusion matrix
-            cm = confusion_matrix(y_test, y_pred)
-
-            # Save the confusion matrix to a .txt file
-            f.write(f"Confusion Matrix:\n{cm}\n")
-            f.write("#" * 50)
-            f.write("\n")
+        # Save the metrics to a .txt file
+        f.write(f"Number of estimators: {result['n_estimators']}\n")
+        f.write(f"Learning rate: {result['lr']}\n")
+        f.write(f"ROC AUC: {result['roc_auc']:.2f}\n")
+        f.write(f"PR AUC: {result['pr_auc']:.2f}\n")
+        f.write(f"F1 Score: {result['f1']:.2f}\n")
+        f.write(f"Matthews Correlation Coefficient: {result['mcc']:.2f}\n")
+        f.write("\n")
+        f.write(f"Confusion Matrix:\n{result['confusion_matrix']}\n")
+        f.write("#" * 50)
+        f.write("\n")
 
 import pandas as pd
 from mpl_toolkits.mplot3d import Axes3D
@@ -131,22 +142,9 @@ from mpl_toolkits.mplot3d import Axes3D
 df = pd.DataFrame(dict_r)
 df.to_csv(__output_dir__ / f'metrics_results{extra_label}.csv', index=False)
 
-# Plot the dataframe with learning rate as x-axis and other columns as lines
-# plt.figure(figsize=(12, 8))
-# for column in df.columns:
-#     if column != 'lr':
-#         plt.plot(df['lr'], df[column], label=column)
-
-# plt.xlabel('Learning Rate')
-# plt.ylabel('Metrics')
-# plt.title('Metrics as a Function of Learning Rate')
-# plt.legend()
-# plt.grid(True)
-# plt.savefig(__output_dir__ / f'metrics_vs_learning_rate{extra_label}.pdf')
 # Create a 3D plot
 fig = plt.figure(figsize=(12, 8))
 ax = fig.add_subplot(111, projection='3d')
-
 # Plot each metric in the 3D plot
 for metric in ['roc_auc', 'pr_auc', 'f1', 'mcc']:
     ax.plot_trisurf(df['lr'], df['n_estimators'], df[metric], label=metric, alpha=0.7)
@@ -157,4 +155,30 @@ ax.set_zlabel('Metric Value')
 ax.set_title('Metrics as a Function of Learning Rate and Number of Estimators')
 ax.legend()
 plt.savefig(__output_dir__ / f'metrics_3d_plot{extra_label}.pdf')
-plt.show()
+plt.close()
+
+# Plot metrics for different learning rates
+fig, ax = plt.subplots(figsize=(10, 6))
+for metric in ['roc_auc', 'pr_auc', 'f1', 'mcc']:
+    ax.plot(df['lr'], df[metric], marker='o', label=metric)
+
+ax.set_xlabel('Learning Rate')
+ax.set_ylabel('Metric Value')
+ax.set_title('Metrics as a Function of Learning Rate')
+ax.legend()
+plt.grid(True)
+plt.savefig(__output_dir__ / f'metrics_vs_lr{extra_label}.pdf')
+plt.close()
+
+# Plot metrics for different number of estimators
+fig, ax = plt.subplots(figsize=(10, 6))
+for metric in ['roc_auc', 'pr_auc', 'f1', 'mcc']:
+    ax.plot(df['n_estimators'], df[metric], marker='o', label=metric)
+
+ax.set_xlabel('Number of Estimators')
+ax.set_ylabel('Metric Value')
+ax.set_title('Metrics as a Function of Number of Estimators')
+ax.legend()
+plt.grid(True)
+plt.savefig(__output_dir__ / f'metrics_vs_n_estimators{extra_label}.pdf')
+plt.close()
