@@ -1,5 +1,6 @@
 import time
 import numpy as np
+import matplotlib.pyplot as plt
 import optuna
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
@@ -13,12 +14,13 @@ from interpret.glassbox import ExplainableBoostingClassifier
 # Create output directory if it does not exist
 from pathlib import Path
 __this_file__ = Path(__file__).resolve()
-__output_dir__ = __this_file__.parent / "output"
+__output_dir__ = __this_file__.parent / "output/comparison"
 __output_dir__.mkdir(parents=True, exist_ok=True)
 
 # Import argparse to parse command line arguments
 import argparse
 from sklearn.metrics import matthews_corrcoef, roc_auc_score, average_precision_score
+import joblib
 argparser = argparse.ArgumentParser(description="Script to compute various metrics with respect to the weights of the classes")
 argparser.add_argument("--weights", type=float, nargs=2, default=[0.83, 0.17], help="Weights of the classes")
 argparser.add_argument("--n_sample", type=int, default=6666, help="Number of samples")
@@ -123,6 +125,9 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
     for future in concurrent.futures.as_completed(future_to_classifier):
         classifier_name, metrics = future.result()
         results[classifier_name] = metrics
+        # Save the best model
+        best_model = future_to_classifier[future]
+        joblib.dump(best_model, __output_dir__ / f"models/{classifier_name}_best_model{extra_label}.pkl")
 
 # Write results to a .txt file
 output_file = __output_dir__ / f"results{extra_label}.txt"
@@ -140,3 +145,34 @@ with open(output_file, "w") as f:
             f.write(f"  {metric}: {value:.4f}\n")
         f.write("#" * 50)
         f.write("\n")
+
+# Plotting function
+def plot_metrics(results, metric_name, ylabel):
+    plt.figure(figsize=(10, 6))
+    for classifier_name, metrics in results.items():
+        plt.bar(classifier_name, metrics[metric_name], label=classifier_name)
+    plt.ylabel(ylabel)
+    plt.title(f'{metric_name} Comparison')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(__output_dir__ / f"{metric_name}_comparison{extra_label}.pdf")
+    plt.close()
+
+# Plotting function with log scale
+def plot_metrics_log_scale(results, metric_name, ylabel):
+    plt.figure(figsize=(10, 6))
+    for classifier_name, metrics in results.items():
+        plt.bar(classifier_name, metrics[metric_name], label=classifier_name)
+    plt.yscale('log')
+    plt.ylabel(ylabel)
+    plt.title(f'{metric_name} Comparison (Log Scale)')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(__output_dir__ / f"{metric_name}_comparison_log_scale{extra_label}.pdf")
+    plt.close()
+
+# Plot each metric
+metrics_to_plot = ["accuracy", "precision", "recall", "f1_score", "mcc", "roc_auc", "pr_auc"]
+for metric in metrics_to_plot:
+    plot_metrics(results, metric, metric.capitalize())
+    plot_metrics_log_scale(results, metric, metric.capitalize())
