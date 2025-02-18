@@ -1,3 +1,7 @@
+'''
+This script compares the various BDT classifiers usually used in HEP (at Belle II at least)
+'''
+
 import time
 import numpy as np
 import matplotlib.pyplot as plt
