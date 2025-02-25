@@ -1,8 +1,10 @@
-import numpy as np
+'''
+This script aims at providing a clear view on the variations of various performance metrics for a BDT, in order to make enlightened judgement on the metric to adopt for a given problem
+'''
+
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 from sklearn.datasets import make_classification
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import train_test_split
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import roc_auc_score, precision_recall_curve, auc, f1_score, matthews_corrcoef
 from sklearn.metrics import confusion_matrix

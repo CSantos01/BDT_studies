@@ -1,4 +1,4 @@
-Executable = /afs/desy.de/user/c/csantos/BDT_studies/executable.sh
+Executable = /afs/desy.de/user/c/csantos/BDT_studies/__exec__/executable.sh
 Log = /afs/desy.de/user/c/csantos/BDT_studies/logs/training_$(Cluster)_$(Process).log
 Output = /afs/desy.de/user/c/csantos/BDT_studies/logs/training_$(Cluster)_$(Process).out
 Error = /afs/desy.de/user/c/csantos/BDT_studies/logs/training_$(Cluster)_$(Process).err

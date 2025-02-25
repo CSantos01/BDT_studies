@@ -17,7 +17,7 @@ from interpret.glassbox import ExplainableBoostingClassifier
 
 # Create output directory if it does not exist
 from pathlib import Path
-__this_file__ = Path(__file__).resolve()
+__this_file__ = Path(__file__).parent.resolve()
 __output_dir__ = __this_file__.parent / "output/comparison"
 __output_dir__.mkdir(parents=True, exist_ok=True)
 
@@ -131,7 +131,9 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
         results[classifier_name] = metrics
         # Save the best model
         best_model = future_to_classifier[future]
-        joblib.dump(best_model, __output_dir__ / f"models/{classifier_name}_best_model{extra_label}.pkl")
+        __model_dir__ = __output_dir__ / "models"
+        __model_dir__.mkdir(parents=True, exist_ok=True)
+        joblib.dump(best_model, __model_dir__ / f"{classifier_name}_best_model{extra_label}.pkl")
 
 # Write results to a .txt file
 output_file = __output_dir__ / f"results{extra_label}.txt"
