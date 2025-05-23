@@ -4,7 +4,7 @@ Output = /afs/desy.de/user/c/csantos/BDT_studies/logs/training_$(Cluster)_$(Proc
 Error = /afs/desy.de/user/c/csantos/BDT_studies/logs/training_$(Cluster)_$(Process).err
 getenv = PATH CONDA_EXE CONDA_PYTHON_EXE PYTHONPATH B2KNNFILES B2KNNROOT CONDA_PREFIX CONDA_DEFAULT_ENV ROOTSYS B2KNN*
 
-request_memory = 4096
+request_memory = 8192
 +RequestRuntime = 24 * 3600
 should_transfer_files = no
 

@@ -3,26 +3,28 @@ This script compares the various BDT classifiers usually used in HEP (at Belle I
 """
 
 import time
-import numpy as np
-import matplotlib.pyplot as plt
-import optuna
-from sklearn.datasets import make_classification
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import (
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score,
-)
-from sklearn.ensemble import GradientBoostingClassifier
-import lightgbm as lgb
-import xgboost as xgb
-
-# from fastbdt import FastBDT
-from interpret.glassbox import ExplainableBoostingClassifier
 
 # Create output directory if it does not exist
 from pathlib import Path
+
+import lightgbm as lgb
+import matplotlib.pyplot as plt
+import numpy as np
+import optuna
+import xgboost as xgb
+from imblearn.combine import SMOTETomek
+
+# from fastbdt import FastBDT
+from interpret.glassbox import ExplainableBoostingClassifier
+from sklearn.datasets import make_classification
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    precision_score,
+    recall_score,
+)
+from sklearn.model_selection import train_test_split
 
 __this_file__ = Path(__file__).parent.resolve()
 __output_dir__ = __this_file__.parent / "output/comparison"
@@ -30,12 +32,13 @@ __output_dir__.mkdir(parents=True, exist_ok=True)
 
 # Import argparse to parse command line arguments
 import argparse
+
+import joblib
 from sklearn.metrics import (
+    average_precision_score,
     matthews_corrcoef,
     roc_auc_score,
-    average_precision_score,
 )
-import joblib
 
 argparser = argparse.ArgumentParser(
     description="Script to compute various metrics with respect to the weights of the classes"
@@ -55,6 +58,11 @@ argparser.add_argument(
 )
 argparser.add_argument(
     "--test_size", type=float, default=0.3, help="Test size"
+)
+argparser.add_argument(
+    "--use_smote_tomek",
+    action="store_true",
+    help="Using SMOTE-Tomek method for class imbalance handling",
 )
 argparser.add_argument(
     "--extra_label",
@@ -81,6 +89,11 @@ X, y = make_classification(
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.3, random_state=42
 )
+
+if args.use_smote_tomek:
+    # Apply SMOTE-Tomek to handle class imbalance
+    smote_tomek = SMOTETomek(random_state=42)
+    X_train, y_train = smote_tomek.fit_resample(X_train, y_train)
 
 
 # Function to evaluate classifier
@@ -199,7 +212,7 @@ with open(output_file, "w") as f:
     for name, metrics in results.items():
         f.write(f"Classifier: {name}\n")
         for metric, value in metrics.items():
-            f.write(f"  {metric}: {value:.4f}\n")
+            f.write(f"  {metric}: {value:.2f}\n")
         f.write("#" * 50)
         f.write("\n")
 
