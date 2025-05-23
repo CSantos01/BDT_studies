@@ -1,0 +1,11 @@
+Executable = /afs/desy.de/user/c/csantos/BDT_studies/__exec__/executable.sh
+Log = /afs/desy.de/user/c/csantos/BDT_studies/logs/training_$(Cluster)_$(Process).log
+Output = /afs/desy.de/user/c/csantos/BDT_studies/logs/training_$(Cluster)_$(Process).out
+Error = /afs/desy.de/user/c/csantos/BDT_studies/logs/training_$(Cluster)_$(Process).err
+getenv = PATH CONDA_EXE CONDA_PYTHON_EXE PYTHONPATH B2KNNFILES B2KNNROOT CONDA_PREFIX CONDA_DEFAULT_ENV ROOTSYS B2KNN*
+
+request_memory = 4096
++RequestRuntime = 24 * 3600
+should_transfer_files = no
+
+Queue 1
